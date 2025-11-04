@@ -36,7 +36,7 @@ git push -u origin main
 
 Go to your GitHub repository URL:
 ```
-https://github.com/YOUR_USERNAME/kafka-dynamic-stream
+https://github.com/kireeti2510/kafka-dynamic-stream
 ```
 
 You should see all your files!
@@ -46,8 +46,7 @@ You should see all your files!
 ## 🎯 Complete Commands (Copy-Paste)
 
 ```bash
-# Replace YOUR_USERNAME with your actual GitHub username
-git remote add origin https://github.com/YOUR_USERNAME/kafka-dynamic-stream.git
+git remote add origin https://github.com/kireeti2510/kafka-dynamic-stream.git
 git branch -M main
 git push -u origin main
 ```
@@ -109,7 +108,7 @@ Add the public key to GitHub → Settings → SSH and GPG keys
 
 Then use SSH URL:
 ```bash
-git remote add origin git@github.com:YOUR_USERNAME/kafka-dynamic-stream.git
+git remote add origin git@github.com:kireeti2510/kafka-dynamic-stream.git
 ```
 
 ---
@@ -143,7 +142,7 @@ Your Kafka Dynamic Stream project is now on GitHub and ready to share with the w
 
 **Share your repository:**
 ```
-https://github.com/YOUR_USERNAME/kafka-dynamic-stream
+https://github.com/kireeti2510/kafka-dynamic-stream
 ```
 
 ---
