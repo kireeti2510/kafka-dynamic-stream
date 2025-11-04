@@ -19,8 +19,11 @@ Your project is now ready to be pushed to GitHub! Follow these steps:
 After creating the repository, GitHub will show you commands. Use these:
 
 ```bash
-# Add GitHub as remote (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/kafka-dynamic-stream.git
+## Quick Commands (Copy-Paste)
+
+```bash
+# Add remote
+git remote add origin https://github.com/kireeti2510/kafka-dynamic-stream.git
 
 # Rename branch to main (optional but recommended)
 git branch -M main

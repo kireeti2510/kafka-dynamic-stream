@@ -50,7 +50,7 @@ A real-time, adaptive content streaming platform demonstrating dynamic Kafka top
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/kafka-dynamic-stream.git
+git clone https://github.com/kireeti2510/kafka-dynamic-stream.git
 cd kafka-dynamic-stream
 ```
 
