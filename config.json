@@ -1,0 +1,10 @@
+{
+  "bootstrap_servers": "localhost:9092",
+  "default_partitions": 3,
+  "default_replication_factor": 1,
+  "topic_watcher_poll_interval": 5,
+  "acks": 1,
+  "compression_type": "gzip",
+  "retries": 3,
+  "auto_offset_reset": "latest"
+}

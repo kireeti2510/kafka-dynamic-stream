@@ -1,0 +1,13 @@
+# Kafka Dynamic Stream Project - Requirements
+# Python dependencies for the dynamic content streaming system
+
+# Kafka Client Library (Python 3.12 compatible version)
+kafka-python-ng
+
+# Web Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Additional utilities (optional but recommended)
+# For better JSON handling and data validation
+python-dateutil==2.8.2
