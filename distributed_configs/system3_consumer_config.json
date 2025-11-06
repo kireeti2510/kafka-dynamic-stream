@@ -1,0 +1,5 @@
+{
+  "bootstrap_servers": "SYSTEM2_IP:9092",
+  "db_path": "/mnt/shared_db/topics.db",
+  "auto_offset_reset": "latest"
+}
