@@ -9,8 +9,8 @@ echo "  SYSTEM 3: CONSUMER SETUP"
 echo "============================================================"
 
 # Variables - CHANGE THESE!
-SYSTEM2_IP="192.168.1.20"      # Kafka Broker IP
-SYSTEM4_IP="192.168.1.40"      # Admin/DB Server IP
+SYSTEM2_IP="192.168.191.212"      # Kafka Broker IP
+SYSTEM4_IP="192.168.191.36"      # Admin/DB Server IP
 SYSTEM4_USER="your_username"    # Username on System 4
 SHARED_DB_PATH="/home/${SYSTEM4_USER}/shared_db"
 

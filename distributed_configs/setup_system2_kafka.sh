@@ -9,7 +9,8 @@ echo "  SYSTEM 2: KAFKA BROKER SETUP"
 echo "============================================================"
 
 # Variables - CHANGE THIS!
-SYSTEM2_IP="192.168.1.20"      # This system's IP address
+# Variables - CHANGE THESE!
+SYSTEM2_IP="192.168.191.212"  # This Kafka broker's IP address
 
 echo "Configuration:"
 echo "  Kafka Broker IP: ${SYSTEM2_IP}"

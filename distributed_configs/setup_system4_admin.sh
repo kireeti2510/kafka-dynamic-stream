@@ -9,8 +9,9 @@ echo "  SYSTEM 4: ADMIN + DATABASE SETUP"
 echo "============================================================"
 
 # Variables - CHANGE THESE!
-SYSTEM4_IP="192.168.1.40"      # This system's IP
-NETWORK_SUBNET="192.168.1.0/24" # Your network subnet
+# Variables - CHANGE THESE!
+SYSTEM4_IP="192.168.191.36"          # This server's IP address
+NETWORK_SUBNET="192.168.191.0/24"    # Your network subnet (for firewall)
 SHARED_DB_DIR="$HOME/shared_db"
 
 echo "Configuration:"
