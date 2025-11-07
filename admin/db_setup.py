@@ -1,6 +1,6 @@
 """
 Database Setup Module
-This module initializes the SQLite database with required tables for managing
+This module initializes the MySQL database with required tables for managing
 topics and user subscriptions in the dynamic Kafka streaming system.
 
 Tables:
@@ -8,55 +8,114 @@ Tables:
 - user_subscriptions: Maps users to their subscribed topics
 """
 
-import sqlite3
+import mysql.connector
+from mysql.connector import Error
 import os
+import json
 
-# Database file path
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'topics.db')
+# Load database configuration
+def load_db_config():
+    """Load database configuration from config.json"""
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+            return config.get('mysql', {
+                'host': 'localhost',
+                'port': 3306,
+                'database': 'kafka_stream',
+                'user': 'kafka_user',
+                'password': 'kafka_password'
+            })
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        return {
+            'host': 'localhost',
+            'port': 3306,
+            'database': 'kafka_stream',
+            'user': 'kafka_user',
+            'password': 'kafka_password'
+        }
 
 def initialize_database():
     """
-    Initialize the SQLite database with required tables.
+    Initialize the MySQL database with required tables.
     Creates topics and user_subscriptions tables if they don't exist.
     """
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    db_config = load_db_config()
     
-    # Create topics table
-    # Status can be: 'pending', 'approved', 'active', 'inactive', 'deleted'
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS topics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'active', 'inactive', 'deleted')),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    try:
+        # Connect to MySQL server
+        conn = mysql.connector.connect(
+            host=db_config['host'],
+            port=db_config['port'],
+            user=db_config['user'],
+            password=db_config['password']
         )
-    ''')
-    
-    # Create user_subscriptions table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS user_subscriptions (
-            user_id INTEGER NOT NULL,
-            topic_name TEXT NOT NULL,
-            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY(user_id, topic_name),
-            FOREIGN KEY(topic_name) REFERENCES topics(name)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    print(f"✓ Database initialized successfully at: {DB_PATH}")
+        cursor = conn.cursor()
+        
+        # Create database if it doesn't exist
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_config['database']}")
+        cursor.execute(f"USE {db_config['database']}")
+        
+        # Create topics table
+        # Status can be: 'pending', 'approved', 'active', 'inactive', 'deleted'
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS topics (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) UNIQUE NOT NULL,
+                status ENUM('pending', 'approved', 'active', 'inactive', 'deleted') NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_status (status),
+                INDEX idx_name (name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ''')
+        
+        # Create user_subscriptions table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_subscriptions (
+                user_id INT NOT NULL,
+                topic_name VARCHAR(255) NOT NULL,
+                subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(user_id, topic_name),
+                FOREIGN KEY(topic_name) REFERENCES topics(name) ON DELETE CASCADE,
+                INDEX idx_user_id (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ''')
+        
+        conn.commit()
+        print(f"✓ MySQL database initialized successfully: {db_config['host']}:{db_config['port']}/{db_config['database']}")
+        
+    except Error as e:
+        print(f"✗ Error initializing MySQL database: {e}")
+        raise
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 def get_connection():
     """
     Get a connection to the database.
     
     Returns:
-        sqlite3.Connection: Database connection object
+        mysql.connector.connection.MySQLConnection: Database connection object
     """
-    return sqlite3.connect(DB_PATH)
+    db_config = load_db_config()
+    try:
+        conn = mysql.connector.connect(
+            host=db_config['host'],
+            port=db_config['port'],
+            database=db_config['database'],
+            user=db_config['user'],
+            password=db_config['password']
+        )
+        return conn
+    except Error as e:
+        print(f"✗ Error connecting to MySQL database: {e}")
+        raise
+
 
 def add_topic(topic_name, status='pending'):
     """
@@ -72,13 +131,17 @@ def add_topic(topic_name, status='pending'):
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO topics (name, status) VALUES (?, ?)', 
+        cursor.execute('INSERT INTO topics (name, status) VALUES (%s, %s)', 
                       (topic_name, status))
         conn.commit()
+        cursor.close()
         conn.close()
         return True
-    except sqlite3.IntegrityError:
-        print(f"Topic '{topic_name}' already exists.")
+    except Error as e:
+        if e.errno == 1062:  # Duplicate entry error
+            print(f"Topic '{topic_name}' already exists.")
+        else:
+            print(f"Error adding topic: {e}")
         return False
     except Exception as e:
         print(f"Error adding topic: {e}")
@@ -95,17 +158,11 @@ def get_topics_by_status(status):
         list: List of topic dictionaries
     """
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT id, name, status, created_at FROM topics WHERE status = ?', 
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute('SELECT id, name, status, created_at FROM topics WHERE status = %s', 
                   (status,))
-    topics = []
-    for row in cursor.fetchall():
-        topics.append({
-            'id': row[0],
-            'name': row[1],
-            'status': row[2],
-            'created_at': row[3]
-        })
+    topics = cursor.fetchall()
+    cursor.close()
     conn.close()
     return topics
 
@@ -117,16 +174,10 @@ def get_all_topics():
         list: List of all topic dictionaries
     """
     conn = get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     cursor.execute('SELECT id, name, status, created_at FROM topics ORDER BY created_at DESC')
-    topics = []
-    for row in cursor.fetchall():
-        topics.append({
-            'id': row[0],
-            'name': row[1],
-            'status': row[2],
-            'created_at': row[3]
-        })
+    topics = cursor.fetchall()
+    cursor.close()
     conn.close()
     return topics
 
@@ -146,11 +197,12 @@ def update_topic_status(topic_name, new_status):
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE topics 
-            SET status = ?, updated_at = CURRENT_TIMESTAMP 
-            WHERE name = ?
+            SET status = %s
+            WHERE name = %s
         ''', (new_status, topic_name))
         conn.commit()
         affected = cursor.rowcount
+        cursor.close()
         conn.close()
         return affected > 0
     except Exception as e:
@@ -171,13 +223,17 @@ def subscribe_user_to_topic(user_id, topic_name):
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO user_subscriptions (user_id, topic_name) VALUES (?, ?)',
+        cursor.execute('INSERT INTO user_subscriptions (user_id, topic_name) VALUES (%s, %s)',
                       (user_id, topic_name))
         conn.commit()
+        cursor.close()
         conn.close()
         return True
-    except sqlite3.IntegrityError:
-        print(f"User {user_id} is already subscribed to {topic_name}")
+    except Error as e:
+        if e.errno == 1062:  # Duplicate entry error
+            print(f"User {user_id} is already subscribed to {topic_name}")
+        else:
+            print(f"Error subscribing user: {e}")
         return False
     except Exception as e:
         print(f"Error subscribing user: {e}")
@@ -197,10 +253,11 @@ def unsubscribe_user_from_topic(user_id, topic_name):
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM user_subscriptions WHERE user_id = ? AND topic_name = ?',
+        cursor.execute('DELETE FROM user_subscriptions WHERE user_id = %s AND topic_name = %s',
                       (user_id, topic_name))
         conn.commit()
         affected = cursor.rowcount
+        cursor.close()
         conn.close()
         return affected > 0
     except Exception as e:
@@ -219,9 +276,10 @@ def get_user_subscriptions(user_id):
     """
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT topic_name FROM user_subscriptions WHERE user_id = ?', 
+    cursor.execute('SELECT topic_name FROM user_subscriptions WHERE user_id = %s', 
                   (user_id,))
     topics = [row[0] for row in cursor.fetchall()]
+    cursor.close()
     conn.close()
     return topics
 
@@ -233,21 +291,23 @@ def get_all_subscriptions():
         list: List of subscription dictionaries
     """
     conn = get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     cursor.execute('SELECT user_id, topic_name, subscribed_at FROM user_subscriptions ORDER BY user_id')
-    subscriptions = []
-    for row in cursor.fetchall():
-        subscriptions.append({
-            'user_id': row[0],
-            'topic_name': row[1],
-            'subscribed_at': row[2]
-        })
+    subscriptions = cursor.fetchall()
+    cursor.close()
     conn.close()
     return subscriptions
 
 if __name__ == '__main__':
     # Initialize the database
     initialize_database()
+    print("\n✓ Database setup complete!")
+    print("\nMake sure MySQL server is running and configured in config.json:")
+    print("  - host: MySQL server hostname")
+    print("  - port: MySQL server port (default 3306)")
+    print("  - database: Database name (will be created if not exists)")
+    print("  - user: MySQL username")
+    print("  - password: MySQL password")
     
     # Add some sample topics for testing
     print("\n--- Adding Sample Topics ---")

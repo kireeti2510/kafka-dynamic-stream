@@ -8,6 +8,9 @@ kafka-python-ng
 Flask==3.0.0
 Werkzeug==3.0.1
 
+# MySQL Database Connector
+mysql-connector-python==8.2.0
+
 # Additional utilities (optional but recommended)
 # For better JSON handling and data validation
 python-dateutil==2.8.2

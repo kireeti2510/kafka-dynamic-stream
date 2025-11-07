@@ -9,5 +9,12 @@
   "retries": 3,
   "auto_offset_reset": "latest",
   "sync_orphaned_topics": false,
-  "broker_id": 0
+  "broker_id": 0,
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "database": "kafka_stream",
+    "user": "kafka_user",
+    "password": "kafka_password"
+  }
 }
