@@ -76,10 +76,11 @@ Open **6 terminal windows** and run these scripts:
 ./terminal1_zookeeper.sh
 ```
 
-**Terminal 2 - Kafka Broker** (wait 10s after ZooKeeper):
+**Terminal 2 - Kafka Broker + Topic Manager** (wait 10s after ZooKeeper):
 ```bash
-./terminal2_kafka.sh
+./terminal2_kafka_with_manager.sh
 ```
+*Or use old method (broker only): `./terminal2_kafka.sh`*
 
 **Terminal 3 - Admin Panel** (after Kafka is ready):
 ```bash
@@ -118,9 +119,10 @@ Enter topic names: news_updates
 ```
 
 ### 3. Wait for Activation (Automatic)
-Topic Watcher detects approval and creates in Kafka:
+Broker Topic Manager detects approval and creates in Kafka:
 ```
-✓ Topic Watcher: 'news_updates' is now ACTIVE
+✓ Topic Manager: Created Kafka topic 'news_updates'
+✓ Topic Manager: 'news_updates' is now ACTIVE
 ```
 
 ### 4. Subscribe (Consumer)
@@ -147,32 +149,37 @@ Topic Watcher detects approval and creates in Kafka:
 ```
 kafka_dynamic_stream/
 │
-├── SETUP_ENVIRONMENT.sh      # One-time setup script
-├── terminal1_zookeeper.sh    # Start ZooKeeper
-├── terminal2_kafka.sh        # Start Kafka Broker
-├── terminal3_admin.sh        # Start Admin Panel
-├── terminal4_producer.sh     # Start Producer
-├── terminal5_consumer.sh     # Start Consumer
-├── terminal6_webui.sh        # Start Web UI
+├── SETUP_ENVIRONMENT.sh          # One-time setup script
+├── terminal1_zookeeper.sh        # Start ZooKeeper
+├── terminal2_kafka_with_manager.sh # Start Kafka + Topic Manager (NEW!)
+├── terminal2_kafka.sh            # Start Kafka Broker only (legacy)
+├── terminal3_admin.sh            # Start Admin Panel
+├── terminal4_producer.sh         # Start Producer
+├── terminal5_consumer.sh         # Start Consumer
+├── terminal6_webui.sh            # Start Web UI
 │
-├── config.json               # Kafka configuration
-├── requirements.txt          # Python dependencies
-├── kafka_env_setup.py        # Environment validation
+├── config.json                   # Kafka configuration
+├── requirements.txt              # Python dependencies
+├── kafka_env_setup.py            # Environment validation
+│
+├── broker/                       # NEW! Broker-side services
+│   ├── topic_manager.py         # Topic lifecycle via Admin API
+│   └── README.md                # Broker documentation
 │
 ├── admin/
-│   ├── db_setup.py          # Database initialization
-│   └── admin_panel.py       # Topic approval CLI
+│   ├── db_setup.py              # Database initialization
+│   └── admin_panel.py           # Topic approval/deactivation CLI
 │
 ├── producer/
-│   ├── producer.py          # Multi-threaded coordinator
-│   ├── topic_watcher.py     # Monitors & creates topics
-│   └── input_listener.py    # User input handler
+│   ├── producer.py              # Multi-threaded coordinator
+│   ├── topic_watcher.py         # (Legacy) Topic watcher
+│   └── input_listener.py        # User input handler
 │
 ├── consumer/
-│   └── consumer.py          # Dynamic subscription consumer
+│   └── consumer.py              # Dynamic subscription consumer
 │
 └── web/
-    └── app.py               # Flask dashboard
+    └── app.py                   # Flask dashboard
 ```
 
 ## 🔧 Configuration
@@ -184,9 +191,16 @@ Edit `config.json` to customize:
   "bootstrap_servers": "localhost:9092",
   "default_partitions": 3,
   "default_replication_factor": 1,
-  "topic_watcher_poll_interval": 5
+  "topic_manager_poll_interval": 5,
+  "sync_orphaned_topics": false,
+  "broker_id": 0
 }
 ```
+
+**Key Parameters:**
+- `topic_manager_poll_interval`: How often broker checks for topic changes (seconds)
+- `sync_orphaned_topics`: Enable orphaned topic detection
+- `broker_id`: Identifier for this broker instance
 
 ## 💻 Command Reference
 
@@ -210,9 +224,10 @@ Edit `config.json` to customize:
 - `1` - View pending topics
 - `2` - Approve topics
 - `3` - Reject topics
-- `4` - View all topics
-- `5` - View subscriptions
-- `6` - Exit
+- `4` - Deactivate topics (mark for deletion)
+- `5` - View all topics
+- `6` - View subscriptions
+- `7` - Exit
 
 ## 🛠️ Troubleshooting
 
@@ -223,7 +238,14 @@ Edit `config.json` to customize:
 **Solution:** Check approval flow:
 1. Producer creates → PENDING
 2. Admin approves → APPROVED
-3. Topic Watcher creates → ACTIVE
+3. Broker Topic Manager creates → ACTIVE
+
+### "How to delete a topic?"
+**Solution:** Use Admin Panel:
+1. Start Admin Panel (Terminal 3)
+2. Choose option 4 (Deactivate Topics)
+3. Enter topic name
+4. Broker Topic Manager will delete it from Kafka
 
 ### "Consumer not receiving messages"
 **Solution:**
@@ -239,6 +261,9 @@ Edit `config.json` to customize:
 
 ## 📖 Documentation
 
+- **[BROKER_LOCATION.md](BROKER_LOCATION.md)** - Topic management location guide
+- **[BROKER_TOPIC_MANAGEMENT.md](BROKER_TOPIC_MANAGEMENT.md)** - Broker-side topic management
+- **[broker/README.md](broker/README.md)** - Broker Topic Manager documentation
 - **[KAFKA_ENV_SETUP.md](KAFKA_ENV_SETUP.md)** - Environment validation guide
 - **[QUICK_REFERENCE.sh](QUICK_REFERENCE.sh)** - All commands reference
 - **[ENHANCEMENT_SUMMARY.md](ENHANCEMENT_SUMMARY.md)** - Latest features

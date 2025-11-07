@@ -23,12 +23,12 @@ def initialize_database():
     cursor = conn.cursor()
     
     # Create topics table
-    # Status can be: 'pending', 'approved', 'active'
+    # Status can be: 'pending', 'approved', 'active', 'inactive', 'deleted'
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS topics (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'active')),
+            status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'active', 'inactive', 'deleted')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )

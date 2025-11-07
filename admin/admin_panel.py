@@ -38,9 +38,10 @@ class AdminPanel:
         print("1. View Pending Topics")
         print("2. Approve Topics")
         print("3. Reject Topics")
-        print("4. View All Topics")
-        print("5. View User Subscriptions")
-        print("6. Exit")
+        print("4. Deactivate Topics (Mark for deletion)")
+        print("5. View All Topics")
+        print("6. View User Subscriptions")
+        print("7. Exit")
         print("="*60)
     
     def view_pending_topics(self):
@@ -118,6 +119,42 @@ class AdminPanel:
         conn.close()
         print(f"\nTotal rejected: {rejected_count}/{len(topics_to_reject)}")
     
+    def deactivate_topics(self):
+        """Deactivate active topics (mark for deletion from Kafka)"""
+        print("\n--- Active Topics ---")
+        active = get_topics_by_status('active')
+        
+        if not active:
+            print("No active topics found.")
+            return
+        
+        print(f"{'ID':<5} {'Topic Name':<30} {'Created At':<20}")
+        print("-" * 60)
+        for topic in active:
+            print(f"{topic['id']:<5} {topic['name']:<30} {topic['created_at']:<20}")
+        
+        print("\n⚠️  Deactivating a topic will DELETE it from Kafka!")
+        print("Enter topic names to deactivate (comma-separated):")
+        choice = input(">> ").strip()
+        
+        if not choice:
+            print("No topics selected.")
+            return
+        
+        topics_to_deactivate = [name.strip() for name in choice.split(',')]
+        
+        deactivated_count = 0
+        for topic_name in topics_to_deactivate:
+            if update_topic_status(topic_name, 'inactive'):
+                print(f"✓ Deactivated: {topic_name} (will be deleted from Kafka)")
+                deactivated_count += 1
+            else:
+                print(f"✗ Failed to deactivate: {topic_name}")
+        
+        print(f"\nTotal deactivated: {deactivated_count}/{len(topics_to_deactivate)}")
+        if deactivated_count > 0:
+            print("ℹ️  Topics marked as 'inactive' will be deleted by the Broker Topic Manager.")
+    
     def view_all_topics(self):
         """Display all topics with their statuses"""
         print("\n--- All Topics ---")
@@ -133,7 +170,9 @@ class AdminPanel:
             status_icon = {
                 'pending': '⏳',
                 'approved': '✓',
-                'active': '🟢'
+                'active': '🟢',
+                'inactive': '🔴',
+                'deleted': '🗑️'
             }.get(topic['status'], '•')
             
             print(f"{topic['id']:<5} {topic['name']:<30} {status_icon} {topic['status']:<10} {topic['created_at']:<20}")
@@ -142,9 +181,11 @@ class AdminPanel:
         pending_count = len([t for t in topics if t['status'] == 'pending'])
         approved_count = len([t for t in topics if t['status'] == 'approved'])
         active_count = len([t for t in topics if t['status'] == 'active'])
+        inactive_count = len([t for t in topics if t['status'] == 'inactive'])
+        deleted_count = len([t for t in topics if t['status'] == 'deleted'])
         
         print("\n" + "-" * 70)
-        print(f"Summary: {pending_count} pending | {approved_count} approved | {active_count} active | {len(topics)} total")
+        print(f"Summary: {pending_count} pending | {approved_count} approved | {active_count} active | {inactive_count} inactive | {deleted_count} deleted | {len(topics)} total")
     
     def view_subscriptions(self):
         """Display all user subscriptions"""
@@ -178,7 +219,7 @@ class AdminPanel:
         
         while True:
             self.display_menu()
-            choice = input("\nEnter your choice (1-6): ").strip()
+            choice = input("\nEnter your choice (1-7): ").strip()
             
             if choice == '1':
                 self.view_pending_topics()
@@ -187,14 +228,16 @@ class AdminPanel:
             elif choice == '3':
                 self.reject_topics()
             elif choice == '4':
-                self.view_all_topics()
+                self.deactivate_topics()
             elif choice == '5':
-                self.view_subscriptions()
+                self.view_all_topics()
             elif choice == '6':
+                self.view_subscriptions()
+            elif choice == '7':
                 print("\n👋 Exiting Admin Panel. Goodbye!")
                 break
             else:
-                print("\n❌ Invalid choice. Please select 1-6.")
+                print("\n❌ Invalid choice. Please select 1-7.")
             
             input("\nPress Enter to continue...")
 

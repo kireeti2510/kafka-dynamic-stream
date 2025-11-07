@@ -116,10 +116,14 @@ echo "cd /opt/kafka"
 echo "bin/zookeeper-server-start.sh config/zookeeper.properties"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📌 TERMINAL 2 - Start Kafka Broker:"
+echo "📌 TERMINAL 2 - Start Kafka Broker + Topic Manager:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "cd /opt/kafka"
-echo "bin/kafka-server-start.sh config/server.properties"
+echo "cd $(pwd)"
+echo "./terminal2_kafka_with_manager.sh"
+echo ""
+echo "   OR (legacy - broker only):"
+echo "   cd /opt/kafka"
+echo "   bin/kafka-server-start.sh config/server.properties"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "⏳ Wait about 10-15 seconds for services to fully start..."
@@ -204,8 +208,8 @@ cat << 'EOF'
    Enter: news_updates
    (Topic approved)
 
-3️⃣  Wait 5 seconds (Topic Watcher creates it in Kafka)
-   (You'll see: 'news_updates' is now ACTIVE)
+3️⃣  Wait 5 seconds (Broker Topic Manager creates it in Kafka)
+   (You'll see: Topic Manager: 'news_updates' is now ACTIVE)
 
 4️⃣  In CONSUMER terminal:
    > subscribe news_updates
@@ -243,9 +247,10 @@ Admin Commands:
   1 - View pending topics
   2 - Approve topics
   3 - Reject topics
-  4 - View all topics
-  5 - View subscriptions
-  6 - Exit
+  4 - Deactivate topics (mark for deletion)
+  5 - View all topics
+  6 - View subscriptions
+  7 - Exit
 
 
 ═══════════════════════════════════════════════════════════════════════
@@ -270,10 +275,13 @@ Solution: Check logs in /opt/kafka/logs/
 ═══════════════════════════════════════════════════════════════════════
 
 For detailed information, see:
-  - README.md              - Complete project guide
-  - QUICK_REFERENCE.sh     - All commands reference
-  - KAFKA_ENV_SETUP.md     - Environment validation guide
-  - ENHANCEMENT_SUMMARY.md - Latest features
+  - README.md                      - Complete project guide
+  - BROKER_LOCATION.md             - Topic management location
+  - BROKER_TOPIC_MANAGEMENT.md     - Broker-side implementation
+  - broker/README.md               - Topic Manager documentation
+  - QUICK_REFERENCE.sh             - All commands reference
+  - KAFKA_ENV_SETUP.md             - Environment validation guide
+  - ENHANCEMENT_SUMMARY.md         - Latest features
 
 
 ═══════════════════════════════════════════════════════════════════════

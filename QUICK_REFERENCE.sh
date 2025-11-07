@@ -24,7 +24,11 @@ cat << 'EOF'
 cd /opt/kafka
 bin/zookeeper-server-start.sh config/zookeeper.properties
 
-# Terminal 2 - Start Kafka Broker  
+# Terminal 2 - Start Kafka Broker + Topic Manager (RECOMMENDED)
+cd kafka-dynamic-stream
+./terminal2_kafka_with_manager.sh
+
+# OR (legacy - broker only, no topic management)
 cd /opt/kafka
 bin/kafka-server-start.sh config/server.properties
 
@@ -77,9 +81,11 @@ quit
 
 1  # View pending topics
 2  # Approve topics (enter: all OR news_updates,weather_data)
-4  # View all topics
-5  # View subscriptions
-6  # Exit
+3  # Reject topics
+4  # Deactivate topics (mark for deletion from Kafka)
+5  # View all topics
+6  # View subscriptions
+7  # Exit
 
 
 ═══════════════════════════════════════════════════════════════
@@ -137,8 +143,9 @@ Choice: 2
 Enter topics: news_updates
 (Or enter: all)
 
-STEP 3 (Wait for Topic Watcher - automatic):
-✓ Topic Watcher: 'news_updates' is now ACTIVE
+STEP 3 (Wait for Broker Topic Manager - automatic):
+✓ Topic Manager: Created Kafka topic 'news_updates'
+✓ Topic Manager: 'news_updates' is now ACTIVE
 
 STEP 4 (Consumer):
 > subscribe news_updates
@@ -185,7 +192,14 @@ Problem: Topic not created
 Solution: Check approval flow
   1. Producer created (pending)
   2. Admin approved (approved)
-  3. Topic Watcher activated (active)
+  3. Broker Topic Manager activated (active)
+
+Problem: How to delete a topic?
+Solution: Use Admin Panel option 4
+  1. Start admin panel
+  2. Choose 4 (Deactivate Topics)
+  3. Enter topic name
+  4. Broker will delete from Kafka
 
 Problem: No messages received
 Solution: 

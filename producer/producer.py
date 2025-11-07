@@ -1,17 +1,19 @@
 """
 Multi-threaded Producer
-Coordinates three threads to manage dynamic topic creation and message publishing.
+Coordinates threads to manage dynamic topic requests and message publishing.
 
 Threads:
 1. Publisher Thread - Publishes messages from queue to Kafka
 2. Input Listener Thread - Receives user commands and messages
-3. Topic Watcher Thread - Monitors approved topics and creates them in Kafka
 
+Note: Topic creation is now handled by the Broker Topic Manager service.
+      The producer only creates topic REQUESTS (status='pending').
+      
 Usage:
     python3 producer.py
 
 Commands (in Input Listener):
-    create <topic_name>        - Create new topic (pending approval)
+    create <topic_name>        - Create new topic request (pending approval)
     send <topic_name> <msg>    - Send message to active topic
     list                       - List all topics
     active                     - List active topics
@@ -156,14 +158,18 @@ class Publisher(Thread):
 class ProducerCoordinator:
     """
     Coordinates all producer threads
+    
+    Note: Topic Watcher is optional (legacy). 
+    Broker Topic Manager now handles topic creation on the broker side.
     """
     
-    def __init__(self, config_path='config.json'):
+    def __init__(self, config_path='config.json', use_topic_watcher=False):
         """
         Initialize the producer coordinator.
         
         Args:
             config_path (str): Path to configuration file
+            use_topic_watcher (bool): Whether to use legacy topic watcher (default: False)
         """
         # Load configuration
         self.config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), config_path)
@@ -176,26 +182,39 @@ class ProducerCoordinator:
         # Create shared resources
         self.message_queue = Queue()
         self.stop_event = Event()
+        self.use_topic_watcher = use_topic_watcher
         
         # Create threads
         self.publisher = Publisher(self.config, self.message_queue, self.stop_event)
-        self.topic_watcher = TopicWatcher(self.config, self.stop_event)
         self.input_listener = InputListener(self.message_queue, self.stop_event)
+        
+        # Topic watcher is optional (legacy mode)
+        if self.use_topic_watcher:
+            self.topic_watcher = TopicWatcher(self.config, self.stop_event)
+            print("⚠️  Using legacy Topic Watcher (consider using Broker Topic Manager instead)")
+        else:
+            self.topic_watcher = None
+            print("ℹ️  Topic creation handled by Broker Topic Manager")
     
     def start(self):
         """Start all producer threads"""
         print("\n" + "="*60)
-        print("  KAFKA DYNAMIC STREAM - MULTI-THREADED PRODUCER")
+        print("  KAFKA DYNAMIC STREAM - PRODUCER")
         print("="*60)
         print(f"Kafka Broker: {self.config['bootstrap_servers']}")
+        if self.use_topic_watcher:
+            print("Mode: Legacy (with Topic Watcher)")
+        else:
+            print("Mode: Standard (Broker manages topics)")
         print("="*60 + "\n")
         
         # Start threads
         self.publisher.start()
         time.sleep(0.5)  # Small delay between starts
         
-        self.topic_watcher.start()
-        time.sleep(0.5)
+        if self.topic_watcher:
+            self.topic_watcher.start()
+            time.sleep(0.5)
         
         self.input_listener.start()
         
@@ -219,7 +238,10 @@ class ProducerCoordinator:
         self.stop_event.set()
         
         # Wait for threads to finish
-        threads = [self.publisher, self.topic_watcher, self.input_listener]
+        threads = [self.publisher, self.input_listener]
+        if self.topic_watcher:
+            threads.append(self.topic_watcher)
+            
         for thread in threads:
             if thread.is_alive():
                 thread.join(timeout=5)
