@@ -1,5 +1,5 @@
 {
-  "bootstrap_servers": "192.168.191.212:9092",
+  "bootstrap_servers": "192.168.191.169:9092",
   "default_partitions": 3,
   "default_replication_factor": 1,
   "topic_manager_poll_interval": 5,
@@ -7,11 +7,11 @@
   "acks": 1,
   "compression_type": "gzip",
   "retries": 3,
-  "auto_offset_reset": "latest",
+  "auto_offset_reset": "earliest",
   "sync_orphaned_topics": false,
   "broker_id": 0,
   "mysql": {
-    "host": "192.168.191.183",
+    "host": "localhost",
     "port": 3306,
     "database": "kafka_stream",
     "user": "kafka_user",
